@@ -123,6 +123,7 @@
         const tituloPagina = document.getElementById('titulo-pagina');
         const badgeFiltro = document.getElementById('badge-filtro');
 
+
         // 🔥 1. DETECTAR ÁREA
         const params = new URLSearchParams(window.location.search);
         const areaActual = params.get('area') ? params.get('area').toLowerCase() : null;
@@ -150,11 +151,22 @@
             statusBadge.innerText = "Desconectado 🔴";
         });
 
-        socket.on('mensaje_whatsapp', (data) => {
-            console.log("📥 Payload:", data);
+        async function obtenerDatos() {
+            try {
+                const response = await fetch('https://api.ter-ia.cloud/reportes');
+                const datos = await response.json();
+                console.log(datos);
+                return datos;
+            }catch(error){
+                console.log('Error al obtener los datos de la API:', error);
+                return [];
+            }
+        }
 
+        function renderizarTarjeta(data) {
             // A. EXTRACCIÓN DE DATOS
-            const areaEntrante = (data.area || (data.datos_recolectados ? data.datos_recolectados.area : '') || 'general').toLowerCase().trim();
+            const datosRecolectados = data.datos_recolectados || {};
+            const areaEntrante = (data.area || datosRecolectados.area || 'general').toLowerCase().trim();
 
             // B. FILTRO LÓGICO
             if (areaActual && !areaEntrante.includes(areaActual)) {
@@ -167,19 +179,15 @@
             }
 
             // C. VARIABLES PRINCIPALES
-            const datos = data.datos_recolectados || {};
             const folio = data.folio || 'S/N';
             const fecha = data.fecha || new Date().toLocaleString();
-            const nombre = datos.nombre || 'Anónimo';
-            const tipoReporte = datos.tipo_reporte || 'Reporte';
-            const ubicacion = datos.ubicacion || 'Ubicación no registrada';
-            const descripcion = datos.descripcion || 'Sin detalles adicionales';
-            const datosExtra = datos.datos_extra || {};
-
-            // 🔥🔥🔥 NUEVO: EXTRACCIÓN DE TELÉFONO DEL CIUDADANO 🔥🔥🔥
-            // Busca en la raíz (data) o dentro de datos (datos_recolectados)
-            const rawPhone = data.telefono || data.phone || datos.telefono || 'S/N';
-            const telefonoClean = rawPhone.toString().replace(/\D/g, ''); // Solo números para el link
+            const nombre = datosRecolectados.nombre || 'Anónimo';
+            const tipoReporte = datosRecolectados.tipo_reporte || 'Reporte';
+            const ubicacion = datosRecolectados.ubicacion || 'Ubicación no registrada';
+            const descripcion = datosRecolectados.descripcion || 'Sin detalles adicionales';
+            const datosExtra = datosRecolectados.datos_extra || {};
+            const rawPhone = data.telefono || data.phone || datosRecolectados.telefono || 'S/N';
+            const telefonoClean = rawPhone.toString().replace(/\D/g, '');
 
             // D. DUPLICADOS
             const cardId = `incidente-${folio.replace(/\s/g, '')}`;
@@ -198,7 +206,6 @@
             // E. ESTILOS VISUALES
             let cssClass = '';
             let iconClass = 'bi-exclamation-circle';
-
             if (areaEntrante.includes('vialidad') || areaEntrante.includes('transito')) {
                 cssClass = 'area-vialidad'; iconClass = 'bi-cone-striped';
             } else if (areaEntrante.includes('policia') || areaEntrante.includes('preventiva')) {
@@ -215,7 +222,6 @@
                 if (val && val !== 'null') {
                     const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                     let valor = val;
-                    // Detecta si es un numero de extorsion (NO el del ciudadano)
                     if (key.includes('numero') && val.length > 7) {
                         valor = `<a href="https://wa.me/${val.replace(/\D/g, '')}" target="_blank" class="fw-bold text-decoration-none text-dark"><i class="bi bi-whatsapp text-success"></i> ${val}</a>`;
                     }
@@ -228,7 +234,6 @@
             card.id = cardId;
             card.className = `card chat-card p-3 ${cssClass}`;
 
-            // Preparamos el botón de WhatsApp del ciudadano
             const btnWhatsapp = rawPhone !== 'S/N'
                 ? `<a href="https://wa.me/${telefonoClean}" target="_blank" class="badge bg-success text-decoration-none mt-1"><i class="bi bi-whatsapp"></i> ${rawPhone}</a>`
                 : '<span class="badge bg-secondary mt-1">S/N</span>';
@@ -256,7 +261,6 @@
                     <div class="bg-white p-2 border rounded fst-italic text-secondary">
                         "${descripcion}"
                     </div>
-
                     <div class="mt-2">
                         ${extrasHTML}
                     </div>
@@ -269,6 +273,19 @@
             `;
 
             lista.prepend(card);
+        }
+
+        // Cargar datos iniciales de la API
+        window.addEventListener('DOMContentLoaded', async () => {
+            const reportes = await obtenerDatos();
+            if (Array.isArray(reportes)) {
+                reportes.forEach(reporte => renderizarTarjeta(reporte));
+            }
+        });
+        
+        socket.on('mensaje_whatsapp', (data) => {
+            console.log("📥 Payload Socket:", data);
+            renderizarTarjeta(data);
         });
     </script>
 </body>
