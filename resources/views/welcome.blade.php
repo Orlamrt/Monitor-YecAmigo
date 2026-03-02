@@ -7,8 +7,7 @@
     <title>Monitor YecaAmigo - Inteligente</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <script src="https://cdn.tailwindcss.com"></script>
-    @vite(['resources/js/app.js','resources/js/cards.js'])
+    @vite(['resources/js/app.js','resources/js/cards.js','resources/css/app.css'])
     <style>
         @keyframes pulse-alert {
             0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }

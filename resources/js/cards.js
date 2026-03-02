@@ -59,7 +59,7 @@
             const areaEntrante = (data.area || datosRecolectados.area || 'general').toLowerCase().trim();
 
             // B. FILTRO LÓGICO
-            if (areaActual && !areaEntrante.includes(areaActual)) {
+            if (areaActual && !areaEntrante.includes(areaActual) && datosRecolectados.status_atencion.includes('PENDIENTE')) {
                 return;
             }
 
