@@ -267,7 +267,7 @@
                 </div>
 
                 <div class="mt-3 d-flex justify-content-end border-top pt-2">
-                    <button class="btn btn-sm btn-outline-secondary me-2" onclick="alert('Ubicación: ${ubicacion}')">Mapa</button>
+                        
                     <button class="btn btn-sm btn-primary" onclick="this.closest('.card').remove()">Marcar Atendido</button>
                 </div>
             `;
