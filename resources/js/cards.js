@@ -1,6 +1,6 @@
 /* Documento de conexión de sockets y construcción de Cards */
 
-const socket = io('http://zenta.icu:3001/');
+const socket = io('https://api.zenta.icu/');
 const lista = document.getElementById('lista-mensajes');
 const statusBadge = document.getElementById('status');
 const tituloPagina = document.getElementById('titulo-pagina');
@@ -67,7 +67,8 @@ window.filtrarPorStatus = function(status, btnElement) {
 /* Construcción de las cards del reporte */
 function renderizarTarjeta(data) {
     // 1. FILTRO POR STATUS (Lógica de los botones)
-    const statusReporte = (data.status_atencion || '').toUpperCase().replace(' ', '_');
+    // si no viene estado desde el webhook lo tratamos como pendiente para que salga con botones
+    const statusReporte = (data.status_atencion || 'PENDIENTE').toUpperCase().replace(' ', '_');
     const filtroNormalizado = filtroStatusActual.toUpperCase().replace(' ', '_');
 
     if (filtroNormalizado !== 'TODOS' && statusReporte !== filtroNormalizado) {
@@ -95,12 +96,19 @@ function renderizarTarjeta(data) {
 
     // 5. CONTROL DE DUPLICADOS (Solo si estamos en modo "TODOS" o tiempo real)
     const cardId = `incidente-${folio.replace(/\s/g, '')}`;
-    if (document.getElementById(cardId)) return;
+    const existingCard = document.getElementById(cardId);
+    if (existingCard) {
+        // Si ya existía un reporte con ese folio lo marcamos como urgente.
+        // Eliminamos la tarjeta vieja para volver a crearla (se añadirá de nuevo más abajo)
+        existingCard.remove();
+        data.reporteUrgente = true;
+    }
 
     // 6. ESTILOS VISUALES
     let cssClass = 'border-l-4 border-gray-300 bg-white';
     let iconClass = 'bi-exclamation-circle';
     
+    // estilos por área
     if (areaEntrante.includes('transito') || areaEntrante.includes('vialidad')) {
         cssClass = 'border-l-4 border-orange-500 bg-orange-50'; iconClass = 'bi-cone-striped';
     } else if (areaEntrante.includes('policia')) {
@@ -111,6 +119,12 @@ function renderizarTarjeta(data) {
         cssClass = 'border-l-4 border-yellow-500 bg-yellow-50'; iconClass = 'bi-fire';
     }
 
+    // si marcamos como urgente a causa de un duplicado
+    if (data.reporteUrgente) {
+        cssClass = 'border-l-4 border-red-700 bg-red-100';
+        iconClass = 'bi-exclamation-triangle-fill';
+    }
+
     // Badge de status visual
     let statusBadgeHTML = '<span class="badge bg-warning text-dark ms-1">PENDIENTE</span>';
     if (statusReporte === 'EN_PROCESO') {
@@ -118,7 +132,10 @@ function renderizarTarjeta(data) {
     } else if (statusReporte === 'RESUELTO') {
         statusBadgeHTML = '<span class="badge bg-success ms-1">ATENDIDO</span>';
     }
-        
+    // cuando el reporte se regenera por duplicado lo tratamos como urgente
+    if (data.reporteUrgente) {
+        statusBadgeHTML = '<span class="badge bg-danger text-white ms-1">REPORTE SIN ATENDER</span>';
+    }
 
     // 7. prepare action buttons based on status
     let actionsHTML = '';
@@ -144,6 +161,15 @@ function renderizarTarjeta(data) {
     const card = document.createElement('div');
     card.id = cardId;
     card.className = `card chat-card p-3 mb-3 shadow-sm ${cssClass}`;
+
+    // si es urgente insertamos un banner arriba
+    if (data.reporteUrgente) {
+        const aviso = document.createElement('div');
+        aviso.className = 'text-center text-danger fw-bold mb-2';
+        aviso.innerText = '🚨 URGENTE';
+        card.appendChild(aviso);
+    }
+
 
     const btnWhatsapp = rawPhone !== 'S/N'
         ? `<a href="https://wa.me/${telefonoClean}" target="_blank" class="badge bg-success text-decoration-none mt-1"><i class="bi bi-whatsapp"></i> ${rawPhone}</a>`
