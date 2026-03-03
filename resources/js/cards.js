@@ -120,7 +120,27 @@ function renderizarTarjeta(data) {
     }
         
 
-    // 7. RENDERIZADO
+    // 7. prepare action buttons based on status
+    let actionsHTML = '';
+    if (statusReporte === 'PENDIENTE') {
+        // show both transition options
+        actionsHTML = `
+            <form onsubmit="event.preventDefault(); actualizarStatus('${folio}', 'EN_PROCESO'); this.closest('.card').remove(); ">
+                <button type="submit" class="btn btn-sm btn-info me-2">Marcar como EN PROCESO</button>
+            </form>
+            <form onsubmit="event.preventDefault(); actualizarStatus('${folio}', 'RESUELTO'); this.closest('.card').remove();">
+                <button type="submit" class="btn btn-sm btn-success">Marcar como ATENDIDO</button>
+            </form>
+        `;
+    } else if (statusReporte === 'EN_PROCESO') {
+        // only allow marking as resolved
+        actionsHTML = `
+            <form onsubmit="event.preventDefault(); actualizarStatus('${folio}', 'RESUELTO'); this.closest('.card').remove();">
+                <button type="submit" class="btn btn-sm btn-success">Marcar como ATENDIDO</button>
+            </form>
+        `;
+    } 
+
     const card = document.createElement('div');
     card.id = cardId;
     card.className = `card chat-card p-3 mb-3 shadow-sm ${cssClass}`;
@@ -150,7 +170,7 @@ function renderizarTarjeta(data) {
             <div class="bg-white p-2 border rounded fst-italic text-secondary">"${descripcion}"</div>
         </div>
         <div class="mt-3 d-flex justify-content-end border-top pt-2">
-            <button class="btn btn-sm btn-primary" onclick="this.closest('.card').remove()">Marcar Atendido</button>
+            ${actionsHTML}
         </div>
     `;
 
