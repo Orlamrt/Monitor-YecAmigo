@@ -15,7 +15,7 @@
             <p class="text-gray-500">Inicia sesión en tu cuenta</p>
         </div>
 
-        <form action="{{ route('login') }}" method="POST">
+        <form action="{{ route('login.post') }}" method="POST">
             @csrf
             
             <div class="mb-4">
