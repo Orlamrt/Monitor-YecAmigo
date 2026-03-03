@@ -1,27 +1,24 @@
 /* Documento de conexión de sockets y construcción de Cards */
 
-// Inicialización del socket y elementos de la web
 const socket = io('http://zenta.icu:3001/');
 const lista = document.getElementById('lista-mensajes');
 const statusBadge = document.getElementById('status');
 const tituloPagina = document.getElementById('titulo-pagina');
 const badgeFiltro = document.getElementById('badge-filtro');
 
-// Clasificación de áreas de departamentos
+// --- ESTADO GLOBAL ---
+let todosLosReportes = []; // Aquí guardaremos todo lo que llegue
+let filtroStatusActual = 'TODOS'; 
+
 const params = new URLSearchParams(window.location.search);
 const areaActual = params.get('area') ? params.get('area').toLowerCase() : null;
 
+// Configuración inicial de UI
 if (areaActual) {
     tituloPagina.innerHTML = `📡 Monitor: ${areaActual.toUpperCase()}`;
     badgeFiltro.innerText = `Filtrando solo: ${areaActual.toUpperCase()}`;
     badgeFiltro.className = "badge bg-warning text-dark border border-dark";
-} else {
-    tituloPagina.innerHTML = `🏢 Centro de Mando General`;
-    badgeFiltro.innerText = "Mostrando TODO";
-    badgeFiltro.className = "badge bg-success";
 }
-
-let primerMensaje = true;
 
 /* Sockets para verificar conexión */
 socket.on('connect', () => {
@@ -46,28 +43,44 @@ async function obtenerDatos() {
     }
 }
 
+// --- FUNCIÓN DE FILTRADO PARA LOS BOTONES ---
+window.filtrarPorStatus = function(status, btnElement) {
+    filtroStatusActual = status;
+    
+    // Actualizar estilos de botones
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    if(btnElement) btnElement.classList.add('active');
+
+    // Limpiar lista y volver a renderizar desde la memoria
+    lista.innerHTML = '';
+    
+    // Ordenar para que el más reciente siempre esté arriba al renderizar
+    const reportesParaMostrar = [...todosLosReportes].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+    
+    reportesParaMostrar.forEach(reporte => renderizarTarjeta(reporte));
+    
+    if (lista.innerHTML === '') {
+        lista.innerHTML = `<div class="text-center text-muted mt-5">No hay reportes con estatus: ${status}</div>`;
+    }
+};
+
 /* Construcción de las cards del reporte */
 function renderizarTarjeta(data) {
-    // 1. FILTRO POR STATUS (Corregido: toUpperCase)
-    // Solo mostramos si es PENDIENTE. Si es otra cosa, ignoramos.
-    if (data.status_atencion && data.status_atencion.toUpperCase() !== 'PENDIENTE') {
+    // 1. FILTRO POR STATUS (Lógica de los botones)
+    const statusReporte = (data.status_atencion || '').toUpperCase().replace(' ', '_');
+    const filtroNormalizado = filtroStatusActual.toUpperCase().replace(' ', '_');
+
+    if (filtroNormalizado !== 'TODOS' && statusReporte !== filtroNormalizado) {
         return;
     }
 
-    // 2. EXTRACCIÓN DE DATOS SEGÚN TU ARRAY
+    // 2. EXTRACCIÓN DE DATOS
     const datosRecolectados = data.datos_recolectados || {};
-    
-    // Prioridad: data.area > datos_recolectados.departamento > 'general'
     const areaEntrante = (data.area || datosRecolectados.departamento || 'general').toLowerCase().trim();
 
     // 3. FILTRO POR ÁREA (URL Params)
     if (areaActual && !areaEntrante.includes(areaActual)) {
         return;
-    }
-
-    if (primerMensaje) {
-        lista.innerHTML = '';
-        primerMensaje = false;
     }
 
     // 4. VARIABLES PRINCIPALES
@@ -77,21 +90,15 @@ function renderizarTarjeta(data) {
     const tipoReporte = datosRecolectados.tipo_reporte || 'Reporte';
     const ubicacion = datosRecolectados.ubicacion || 'Ubicación no registrada';
     const descripcion = datosRecolectados.descripcion || 'Sin detalles adicionales';
-    const datosExtra = datosRecolectados.datos_extra || {};
     const rawPhone = data.telefono || data.phone || datosRecolectados.telefono || 'S/N';
     const telefonoClean = rawPhone.toString().replace(/\D/g, '');
 
-    // 5. CONTROL DE DUPLICADOS
+    // 5. CONTROL DE DUPLICADOS (Solo si estamos en modo "TODOS" o tiempo real)
     const cardId = `incidente-${folio.replace(/\s/g, '')}`;
-    if (document.getElementById(cardId)) {
-        const tarjetaExistente = document.getElementById(cardId);
-        tarjetaExistente.classList.add('urgente-repetido');
-        lista.prepend(tarjetaExistente);
-        return;
-    }
+    if (document.getElementById(cardId)) return;
 
-    // 6. ESTILOS VISUALES (Usando tus clases de Tailwind/Bootstrap)
-    let cssClass = '';
+    // 6. ESTILOS VISUALES
+    let cssClass = 'border-l-4 border-gray-300 bg-white';
     let iconClass = 'bi-exclamation-circle';
     
     if (areaEntrante.includes('transito') || areaEntrante.includes('vialidad')) {
@@ -103,6 +110,11 @@ function renderizarTarjeta(data) {
     } else if (areaEntrante.includes('civil')) {
         cssClass = 'border-l-4 border-yellow-500 bg-yellow-50'; iconClass = 'bi-fire';
     }
+
+    // Badge de status visual
+    const statusBadgeHTML = statusReporte === 'EN_PROCESO' 
+        ? '<span class="badge bg-info text-dark ms-1">EN PROCESO</span>' 
+        : '<span class="badge bg-warning text-dark ms-1">PENDIENTE</span>';
 
     // 7. RENDERIZADO
     const card = document.createElement('div');
@@ -120,6 +132,7 @@ function renderizarTarjeta(data) {
                 <span class="badge bg-white text-dark border ms-1">
                     <i class="bi ${iconClass}"></i> ${areaEntrante.toUpperCase()}
                 </span>
+                ${statusBadgeHTML}
             </div>
             <div class="text-end lh-1">
                 <small class="fw-bold text-muted" style="font-size: 0.75rem;">${fecha}</small><br>
@@ -143,17 +156,15 @@ function renderizarTarjeta(data) {
 // Cargar datos iniciales
 window.addEventListener('DOMContentLoaded', async () => {
     const reportes = await obtenerDatos();
+    todosLosReportes = reportes; 
     
-    // Ordenar por fecha (asumiendo formato ISO o comparable) de más antiguo a más reciente
-    // para que al usar .prepend() en renderizarTarjeta, el más reciente quede arriba.
-    const reportesOrdenados = reportes.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-    reportesOrdenados.forEach(reporte => renderizarTarjeta(reporte));
+    // Renderizado inicial
+    filtrarPorStatus('TODOS');
 });
 
 // Escuchar Socket
 socket.on('mensaje_whatsapp', (data) => {
     console.log("📥 Payload Socket:", data);
-    renderizarTarjeta(data);
+    todosLosReportes.push(data);
+    renderizarTarjeta(data);     
 });
-
-console.log(obtenerDatos());

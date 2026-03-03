@@ -29,6 +29,17 @@
     </div>
 
     <div class="container">
+        <div class="row mb-4">
+            <div class="col-12 d-flex justify-content-center gap-2">
+                <button class="btn btn-outline-primary active filter-btn" onclick="filtrarPorStatus('TODOS', this)">Todos</button>
+                <button class="btn btn-outline-warning filter-btn" onclick="filtrarPorStatus('PENDIENTE', this)">
+                    <i class="bi bi-clock-history"></i> Pendientes
+                </button>
+                <button class="btn btn-outline-info filter-btn" onclick="filtrarPorStatus('EN_PROCESO', this)">
+                    <i class="bi bi-gear-fill"></i> En Proceso
+                </button>
+            </div>
+        </div>
         <div class="row justify-content-center">
             <div class="col-lg-8 col-md-10">
                 <div id="lista-mensajes">
