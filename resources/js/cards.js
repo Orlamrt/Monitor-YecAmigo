@@ -177,24 +177,6 @@ function renderizarTarjeta(data) {
     lista.prepend(card);
 }
 
-// Expose status updater globally so inline onsubmit handlers can access it
-window.actualizarStatus = async function(folio, nuevoStatus) {
-    console.log(`Actualizar folio ${folio} a status: ${nuevoStatus}`);
-    try {
-        await fetch(`https://api.ter-ia.cloud/reportes/${folio}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status_atencion: nuevoStatus })
-        });
-        // refresh local cache and UI after server update
-        const nuevos = await obtenerDatos();
-        todosLosReportes = nuevos;
-        filtrarPorStatus(filtroStatusActual);
-    } catch (err) {
-        console.error('Error al actualizar status:', err);
-    }
-};   
-
 // Cargar datos iniciales
 window.addEventListener('DOMContentLoaded', async () => {
     const reportes = await obtenerDatos();
