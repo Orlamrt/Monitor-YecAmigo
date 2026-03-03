@@ -146,12 +146,30 @@ function renderizarTarjeta(data) {
             <div class="bg-white p-2 border rounded fst-italic text-secondary">"${descripcion}"</div>
         </div>
         <div class="mt-3 d-flex justify-content-end border-top pt-2">
-            <button class="btn btn-sm btn-primary" onclick="this.closest('.card').remove()">Marcar Atendido</button>
+            <form onsubmit="event.preventDefault(); actualizarStatus('${folio}', 'EN_PROCESO');">
+                <button type="submit" class="btn btn-sm btn-info me-2">Marcar como EN PROCESO</button>
+            </form>
+            <form onsubmit="event.preventDefault(); actualizarStatus('${folio}', 'REALIZADO');">
+                <button type="submit" class="btn btn-sm btn-success">Marcar como ATENDIDO</button>
+            </form>
+            
         </div>
     `;
 
     lista.prepend(card);
 }
+
+// Expose status updater globally so inline onsubmit handlers can access it
+window.actualizarStatus = function(folio, nuevoStatus) {
+    // Aquí podrías implementar la lógica para enviar el nuevo status al backend
+    console.log(`Actualizar folio ${folio} a status: ${nuevoStatus}`);
+    // Ejemplo: 
+    fetch(`https://api.ter-ia.cloud/reportes/${folio}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status_atencion: nuevoStatus })
+    });
+};   
 
 // Cargar datos iniciales
 window.addEventListener('DOMContentLoaded', async () => {
