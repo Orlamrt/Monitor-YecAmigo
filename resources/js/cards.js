@@ -112,9 +112,13 @@ function renderizarTarjeta(data) {
     }
 
     // Badge de status visual
-    const statusBadgeHTML = statusReporte === 'EN_PROCESO' 
-        ? '<span class="badge bg-info text-dark ms-1">EN PROCESO</span>' 
-        : '<span class="badge bg-warning text-dark ms-1">PENDIENTE</span>';
+    let statusBadgeHTML = '<span class="badge bg-warning text-dark ms-1">PENDIENTE</span>';
+    if (statusReporte === 'EN_PROCESO') {
+        statusBadgeHTML = '<span class="badge bg-info text-dark ms-1">EN PROCESO</span>';
+    } else if (statusReporte === 'RESUELTO') {
+        statusBadgeHTML = '<span class="badge bg-success ms-1">ATENDIDO</span>';
+    }
+        
 
     // 7. RENDERIZADO
     const card = document.createElement('div');

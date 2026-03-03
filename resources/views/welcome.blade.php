@@ -38,6 +38,9 @@
                 <button class="btn btn-outline-info filter-btn" onclick="filtrarPorStatus('EN_PROCESO', this)">
                     <i class="bi bi-gear-fill"></i> En Proceso
                 </button>
+                <button class="btn btn-outline-success filter-btn" onclick="filtrarPorStatus('RESUELTO', this)">
+                    <i class="bi bi-check-circle-fill"></i> Atendidos
+                </button>
             </div>
         </div>
         <div class="row justify-content-center">
