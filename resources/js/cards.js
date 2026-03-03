@@ -150,36 +150,12 @@ function renderizarTarjeta(data) {
             <div class="bg-white p-2 border rounded fst-italic text-secondary">"${descripcion}"</div>
         </div>
         <div class="mt-3 d-flex justify-content-end border-top pt-2">
-            <form onsubmit="event.preventDefault(); actualizarStatus('${folio}', 'EN_PROCESO'); this.closest('.card').remove();">
-                <button type="submit" class="btn btn-sm btn-info me-2">Marcar como EN PROCESO</button>
-            </form>
-            <form onsubmit="event.preventDefault(); actualizarStatus('${folio}', 'RESUELTO'); this.closest('.card').remove();">
-                <button type="submit" class="btn btn-sm btn-success">Marcar como ATENDIDO</button>
-            </form>
-            
+            <button class="btn btn-sm btn-primary" onclick="this.closest('.card').remove()">Marcar Atendido</button>
         </div>
     `;
 
     lista.prepend(card);
 }
-
-// Expose status updater globally so inline onsubmit handlers can access it
-window.actualizarStatus = async function(folio, nuevoStatus) {
-    console.log(`Actualizar folio ${folio} a status: ${nuevoStatus}`);
-    try {
-        await fetch(`https://api.ter-ia.cloud/reportes/${folio}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status_atencion: nuevoStatus })
-        });
-        // refresh local cache and UI after server update
-        const nuevos = await obtenerDatos();
-        todosLosReportes = nuevos;
-        filtrarPorStatus(filtroStatusActual);
-    } catch (err) {
-        console.error('Error al actualizar status:', err);
-    }
-};   
 
 // Cargar datos iniciales
 window.addEventListener('DOMContentLoaded', async () => {

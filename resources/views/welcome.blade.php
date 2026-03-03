@@ -20,6 +20,15 @@
 
 <body class="bg-[#f4f6f9] font-['Segoe_UI',_system-ui,_sans-serif]">
 
+    <div class="absolute top-4 right-4">
+        <form action="{{ route('logout') }}" method="POST">
+            @csrf
+            <button type="submit" class="btn btn-sm btn-danger shadow-sm">
+                <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+            </button>
+        </form>
+    </div>
+
     <div class="bg-gradient-to-br from-[#1e3c72] to-[#2a5298] text-white p-[20px] mb-[25px] rounded-b-[15px] text-center shadow-sm">
         <h2 id="titulo-pagina" class="fw-bold text-2xl"><i class="bi bi-shield-lock-fill"></i> Centro de Mando</h2>
         <div class="mt-2">
@@ -57,6 +66,22 @@
     </div>
 
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+    <script>
+        // Validamos el rol del usuario autenticado de Laravel
+        const userRole = "{{ strtolower(Auth::user()->role) }}";
+        const params = new URLSearchParams(window.location.search);
+        let areaURL = params.get('area') ? params.get('area').toLowerCase() : null;
+
+        // Si no es admin y el área de la URL no es su rol, lo corregimos
+        if (userRole === 'general' && areaURL !== null) {
+            window.location.href = "{{ route('monitor') }}";
+        } else if (userRole !== 'general' && areaURL !== userRole) {
+            window.location.href = "{{ route('monitor') }}?area=" + userRole;
+        }
+        
+        // ... resto de tu lógica de sockets y cards ...
+    </script>
 </body>
 
 </html>
